@@ -17,13 +17,13 @@ rentalsRouter.post(
 );
 
 //rentalsRouter.get('/rentals', getRentals);
-//
+
 //rentalsRouter.put(
 //    '/rentals/:id/return',
 //    validateSchemaMiddleware(rentalSchema),
 //    endRental
 //);
-//
-//rentalsRouter.delete('/rentals/:id', deleteRental);
+
+rentalsRouter.delete('/rentals/:id', deleteRental);
 
 export default rentalsRouter;

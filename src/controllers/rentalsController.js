@@ -1,15 +1,23 @@
 import connection from '../db.js';
+import { conflict as customerValidation } from '../middleware/customersValidationMiddleware.js';
+import {
+    stock,
+    conflict as rentalValidation,
+    rentalReturn,
+} from '../middleware/rentalsValidationMiddleware.js';
+import { conflict as gameValidation } from '../middleware/gamesValidationMiddleware.js';
 import dayjs from 'dayjs';
 
 const today = dayjs().format('YYYY-MM-DD');
 
 export async function createRental(req, res) {
     const { customerId, gameId, daysRented } = req.body;
-    const customer = await customerValidation(customerId);
-    const game = await gameValidation(gameId);
-    const rental = await rentalValidation(gameId);
 
     try {
+        const customer = await customerValidation(customerId);
+        const game = await gameValidation(gameId);
+        const rental = await stock(gameId);
+
         if (customer && game && rental) {
             const {
                 rows: [price],
@@ -49,74 +57,40 @@ export async function createRental(req, res) {
 }
 
 export async function getRentals(req, res) {
-    const { customerId, gameId } = req.query;
-    res.send(`${customerId}, ${gameId}`);
-    // try {
-    // } catch (error) {
-    //     res.status(500).send(error);
-    // }
-}
-
-export async function endRental(req, res) {}
-
-export async function deleteRental(req, res) {}
-
-async function customerValidation(id) {
     try {
-        const { rows } = await connection.query(
-            `
-            SELECT * FROM customers WHERE id=$1
-            `,
-            [id]
-        );
-        if (rows[0]) {
-            return true;
-        } else {
-            return false;
-        }
-    } catch {
-        return false;
+    } catch (error) {
+        res.status(500).send(error);
     }
 }
-async function gameValidation(id) {
+
+export async function endRental(req, res) {
     try {
-        const { rows } = await connection.query(
-            `
-            SELECT * FROM games WHERE id=$1
-            `,
-            [id]
-        );
-        if (rows[0]) {
-            return true;
-        } else {
-            return false;
-        }
-    } catch {
-        return false;
+    } catch (error) {
+        res.status(500).send(error);
     }
 }
-async function rentalValidation(id) {
+
+export async function deleteRental(req, res) {
+    const { id } = req.params;
     try {
-        const { rows: rentals } = await connection.query(
-            `
-            SELECT * FROM rentals WHERE "gameId"=$1
-            `,
-            [id]
-        );
-
-        const { rows: games } = await connection.query(
-            `
-            SELECT "stockTotal" FROM games WHERE id=$1
-            `,
-            [id]
-        );
-
-        if (rentals.length < games[0].stockTotal) {
-            return true;
+        const rental = await rentalValidation(id);
+        if (rental) {
+            const returnedAlready = await rentalReturn(id);
+            if (returnedAlready) {
+                res.sendStatus(400);
+            } else {
+                await connection.query(
+                    `
+                    DELETE FROM rentals WHERE id=$1
+                    `,
+                    [id]
+                );
+                res.sendStatus(200);
+            }
         } else {
-            return false;
+            res.sendStatus(404);
         }
     } catch (error) {
-        return false;
+        res.status(500).send(error);
     }
 }
