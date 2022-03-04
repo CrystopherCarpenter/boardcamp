@@ -8,7 +8,7 @@ export async function createCustomer(req, res) {
             rows: [customer],
         } = await connection.query(
             `
-      SELECT * FROM customers WHERE cpf = ($1)
+      SELECT * FROM customers WHERE cpf = $1
       `,
             [cpf]
         );
