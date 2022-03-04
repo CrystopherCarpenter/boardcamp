@@ -8,8 +8,8 @@ export async function createGame(req, res) {
             rows: [category],
         } = await connection.query(
             `
-      SELECT * FROM categories WHERE id = $1
-      `,
+            SELECT * FROM categories WHERE id = $1
+            `,
             [categoryId]
         );
 
@@ -28,10 +28,10 @@ export async function createGame(req, res) {
             if (!gameName) {
                 await connection.query(
                     `
-      INSERT INTO 
-        games (name, image, "stockTotal", "pricePerDay", "categoryId") 
-        VALUES ($1, $2, $3, $4, $5)
-    `,
+                    INSERT INTO 
+                    games (name, image, "stockTotal", "pricePerDay", "categoryId") 
+                    VALUES ($1, $2, $3, $4, $5)
+                    `,
                     [name, image, stockTotal, pricePerDay, categoryId]
                 );
 
@@ -41,19 +41,39 @@ export async function createGame(req, res) {
             }
         }
     } catch (error) {
-        console.log(error);
         res.status(500).send(error);
     }
 }
 
 export async function getGames(req, res) {
+    const { name } = req.query;
+
     try {
-        const { rows } = await connection.query(
-            `
-      SELECT * FROM games
-      `
-        );
-        res.send(rows);
+        if (name) {
+            const { rows } = await connection.query(
+                `
+                SELECT 
+                games.*, 
+                categories.name AS "categoryName" 
+                FROM games  
+                JOIN categories ON categories.id = games."categoryId"
+                WHERE lower(games.name) LIKE lower($1)
+                `,
+                [`${name}%`]
+            );
+            res.send(rows);
+        } else {
+            const { rows } = await connection.query(
+                `
+                SELECT 
+                games.*, 
+                categories.name AS "categoryName" 
+                FROM games 
+                JOIN categories ON categories.id = games."categoryId"
+                `
+            );
+            res.send(rows);
+        }
     } catch (error) {
         res.status(500).send(error);
     }
