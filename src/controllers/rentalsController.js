@@ -4,6 +4,7 @@ import {
     stock,
     conflict as rentalValidation,
     rentalReturn,
+    delayFeeCalc,
 } from '../middleware/rentalsValidationMiddleware.js';
 import { conflict as gameValidation } from '../middleware/gamesValidationMiddleware.js';
 import dayjs from 'dayjs';
@@ -23,7 +24,7 @@ export async function createRental(req, res) {
                 rows: [price],
             } = await connection.query(
                 `
-                SELECT "pricePerDay" FROM games WHERE id = $1
+                SELECT "pricePerDay" FROM games WHERE id=$1
                 `,
                 [gameId]
             );
@@ -64,8 +65,30 @@ export async function getRentals(req, res) {
 }
 
 export async function endRental(req, res) {
+    const { id } = req.params;
+
     try {
+        const rental = await rentalValidation(id);
+        if (rental) {
+            const returnedAlready = await rentalReturn(id);
+            if (returnedAlready) {
+                res.sendStatus(400);
+            } else {
+                const delayFee = await delayFeeCalc(id, today);
+
+                await connection.query(
+                    `
+                    UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3
+                    `,
+                    [today, delayFee, id]
+                );
+                res.sendStatus(200);
+            }
+        } else {
+            res.sendStatus(404);
+        }
     } catch (error) {
+        console.log(error);
         res.status(500).send(error);
     }
 }

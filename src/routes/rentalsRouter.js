@@ -16,13 +16,9 @@ rentalsRouter.post(
     createRental
 );
 
-//rentalsRouter.get('/rentals', getRentals);
+rentalsRouter.get('/rentals', getRentals);
 
-//rentalsRouter.put(
-//    '/rentals/:id/return',
-//    validateSchemaMiddleware(rentalSchema),
-//    endRental
-//);
+rentalsRouter.post('/rentals/:id/return', endRental);
 
 rentalsRouter.delete('/rentals/:id', deleteRental);
 
