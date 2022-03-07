@@ -68,14 +68,13 @@ export async function getRentals(req, res) {
                 JOIN games ON games.id = rentals."gameId"
                 JOIN categories ON categories.id = games."categoryId"`;
 
+    if (customerId) {
+        query += `WHERE rentals."customerId"=${customerId}`;
+    }
+    if (gameId) {
+        query += `WHERE rentals."gameId"=${gameId}`;
+    }
     try {
-        if (customerId) {
-            query += `WHERE rentals."customerId"=${customerId}`;
-        }
-        if (gameId) {
-            query += `WHERE rentals."gameId"=${gameId}`;
-        }
-
         const { rows } = await connection.query(query);
 
         res.send(

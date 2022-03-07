@@ -55,10 +55,10 @@ export async function getGames(req, res) {
                 JOIN categories ON categories.id = games."categoryId"
                 `;
 
+    if (name) {
+        query += `WHERE lower(games.name) LIKE lower('${name}%')`;
+    }
     try {
-        if (name) {
-            query += `WHERE lower(games.name) LIKE lower('${name}%')`;
-        }
         const { rows } = await connection.query(query);
         res.send(rows);
     } catch (error) {
