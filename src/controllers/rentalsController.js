@@ -58,8 +58,99 @@ export async function createRental(req, res) {
 }
 
 export async function getRentals(req, res) {
+    const { customerId, gameId } = req.query;
+    let where = ``;
+    let response;
+
     try {
+        if (customerId) {
+            const { rows } = await connection.query(
+                `
+            SELECT rentals.*, 
+            customers.name AS "customerName", 
+            games.name AS "gameName",
+            games."categoryId",
+            categories."name" AS "categoryName"
+            FROM rentals
+            JOIN customers ON customers.id = rentals."customerId"
+            JOIN games ON games.id = rentals."gameId"
+            JOIN categories ON categories.id = games."categoryId"
+            WHERE rentals."customerId"=$1
+            `,
+                [customerId]
+            );
+            response = rows;
+        } else if (gameId) {
+            const { rows } = await connection.query(
+                `
+            SELECT rentals.*, 
+            customers.name AS "customerName", 
+            games.name AS "gameName",
+            games."categoryId",
+            categories."name" AS "categoryName"
+            FROM rentals
+            JOIN customers ON customers.id = rentals."customerId"
+            JOIN games ON games.id = rentals."gameId"
+            JOIN categories ON categories.id = games."categoryId"
+            WHERE rentals."gameId"=$1
+            `,
+                [gameId]
+            );
+            response = rows;
+        } else {
+            const { rows } = await connection.query(
+                `
+            SELECT rentals.*, 
+            customers.name AS "customerName", 
+            games.name AS "gameName",
+            games."categoryId",
+            categories."name" AS "categoryName"
+            FROM rentals
+            JOIN customers ON customers.id = rentals."customerId"
+            JOIN games ON games.id = rentals."gameId"
+            JOIN categories ON categories.id = games."categoryId"
+            `
+            );
+            response = rows;
+        }
+        res.send(
+            response.map((row) => {
+                const {
+                    id,
+                    customerId,
+                    gameId,
+                    rentDate,
+                    daysRented,
+                    returnDate,
+                    originalPrice,
+                    delayFee,
+                    customerName,
+                    gameName,
+                    categoryId,
+                    categoryName,
+                } = row;
+
+                return {
+                    id,
+                    customerId,
+                    gameId,
+                    rentDate,
+                    daysRented,
+                    returnDate,
+                    originalPrice,
+                    delayFee,
+                    customer: { id: customerId, name: customerName },
+                    game: {
+                        id: gameId,
+                        name: gameName,
+                        categoryId,
+                        categoryName,
+                    },
+                };
+            })
+        );
     } catch (error) {
+        console.log(error);
         res.status(500).send(error);
     }
 }

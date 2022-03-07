@@ -85,5 +85,5 @@ export async function delayFeeCalc(id, today) {
         return delayFee;
     }
 
-    return 0;
+    return null;
 }
