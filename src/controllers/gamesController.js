@@ -47,33 +47,20 @@ export async function createGame(req, res) {
 
 export async function getGames(req, res) {
     const { name } = req.query;
-
-    try {
-        if (name) {
-            const { rows } = await connection.query(
-                `
-                SELECT 
-                games.*, 
-                categories.name AS "categoryName" 
-                FROM games  
-                JOIN categories ON categories.id = games."categoryId"
-                WHERE lower(games.name) LIKE lower($1)
-                `,
-                [`${name}%`]
-            );
-            res.send(rows);
-        } else {
-            const { rows } = await connection.query(
-                `
+    let query = `
                 SELECT 
                 games.*, 
                 categories.name AS "categoryName" 
                 FROM games 
                 JOIN categories ON categories.id = games."categoryId"
-                `
-            );
-            res.send(rows);
+                `;
+
+    try {
+        if (name) {
+            query += `WHERE lower(games.name) LIKE lower('${name}%')`;
         }
+        const { rows } = await connection.query(query);
+        res.send(rows);
     } catch (error) {
         res.status(500).send(error);
     }
