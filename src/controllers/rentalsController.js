@@ -70,8 +70,7 @@ export async function getRentals(req, res) {
 
     if (customerId) {
         query += `WHERE rentals."customerId"=${customerId}`;
-    }
-    if (gameId) {
+    } else if (gameId) {
         query += `WHERE rentals."gameId"=${gameId}`;
     }
     try {
