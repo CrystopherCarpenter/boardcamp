@@ -1,10 +1,10 @@
-export default function validateSchemaMiddleware(schema) {
+export const validateSchemaMiddleware = (schema) => {
     return (req, res, next) => {
         const validation = schema.validate(req.body);
         if (validation.error) {
-            return res.sendStatus(400);
+            throw 400;
         }
 
         next();
     };
-}
+};

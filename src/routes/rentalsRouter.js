@@ -1,25 +1,14 @@
 import { Router } from 'express';
-import {
-    createRental,
-    deleteRental,
-    endRental,
-    getRentals,
-} from '../controllers/rentalsController.js';
-import validateSchemaMiddleware from '../middleware/validateSchemaMiddleware.js';
+import * as rentalsController from '../controllers/rentalsController.js';
+import { validateSchemaMiddleware } from '../middleware/validateSchemaMiddleware.js';
 import rentalSchema from '../schemas/rentalSchema.js';
 
-const rentalsRouter = Router();
+const rentals = Router();
 
-rentalsRouter.post(
-    '/rentals',
-    validateSchemaMiddleware(rentalSchema),
-    createRental
-);
+rentals
+    .post('/', validateSchemaMiddleware(rentalSchema), rentalsController.create)
+    .get('/', rentalsController.getByCustomerOrGameId)
+    .post('/:id/return', rentalsController.finish)
+    .delete('/:id', rentalsController.exclude);
 
-rentalsRouter.get('/rentals', getRentals);
-
-rentalsRouter.post('/rentals/:id/return', endRental);
-
-rentalsRouter.delete('/rentals/:id', deleteRental);
-
-export default rentalsRouter;
+export { rentals };

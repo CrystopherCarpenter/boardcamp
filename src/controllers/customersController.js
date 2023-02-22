@@ -1,110 +1,31 @@
-import connection from '../db.js';
+import customerService from '../service/customerService.js';
 
-export async function createCustomer(req, res) {
-    const { name, phone, cpf, birthday } = req.body;
+export async function create(req, res) {
+    const customer = req.body;
 
-    try {
-        const {
-            rows: [customer],
-        } = await connection.query(
-            `
-            SELECT * FROM customers WHERE cpf = $1
-            `,
-            [cpf]
-        );
+    await customerService.create(customer);
 
-        if (!customer) {
-            await connection.query(
-                `
-                INSERT INTO 
-                customers (name, phone, cpf, birthday) 
-                VALUES ($1, $2, $3, $4)
-                `,
-                [name, phone, cpf, birthday]
-            );
-
-            res.sendStatus(201);
-        } else {
-            res.sendStatus(409);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    return res.sendStatus(201);
 }
 
-export async function getCustomers(req, res) {
+export async function getByCpfOrGetAll(req, res) {
     const { cpf } = req.query;
-    try {
-        if (cpf) {
-            const { rows } = await connection.query(
-                `
-                SELECT * FROM customers WHERE cpf LIKE $1
-                `,
-                [`${cpf}%`]
-            );
-            res.send(rows);
-        } else {
-            const { rows } = await connection.query(
-                `
-                SELECT * FROM customers
-                `
-            );
-            res.send(rows);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    const response = await customerService.getByCpfOrGetAll(cpf);
+
+    return res.send(response);
 }
 
-export async function getCustomer(req, res) {
+export async function getById(req, res) {
     const { id } = req.params;
-    try {
-        const {
-            rows: [customer],
-        } = await connection.query(
-            `
-            SELECT * FROM customers WHERE id=$1
-            `,
-            [id]
-        );
-        if (!customer) {
-            res.sendStatus(404);
-        } else {
-            res.send(customer);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    const response = await customerService.getById(id);
+
+    return res.send(response);
 }
 
-export async function updateCustomer(req, res) {
-    const { name, phone, cpf, birthday } = req.body;
+export async function update(req, res) {
     const { id } = req.params;
-    try {
-        const {
-            rows: [customer],
-        } = await connection.query(
-            `
-            SELECT * FROM customers WHERE cpf=$1 AND id!=$2
-            `,
-            [cpf, id]
-        );
+    const customer = { ...req.body, id };
+    await customerService.update(customer);
 
-        if (!customer) {
-            await connection.query(
-                `
-                UPDATE customers 
-                SET name=$1, phone=$2, cpf=$3, birthday=$4  
-                WHERE id=$5
-                `,
-                [name, phone, cpf, birthday, id]
-            );
-
-            res.sendStatus(200);
-        } else {
-            res.sendStatus(409);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    return res.sendStatus(200);
 }

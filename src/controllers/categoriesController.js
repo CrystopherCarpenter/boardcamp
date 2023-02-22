@@ -1,46 +1,15 @@
-import connection from '../db.js';
+import categoryService from '../service/categoryService.js';
 
-export async function createCategory(req, res) {
+export async function create(req, res) {
     const { name } = req.body;
 
-    try {
-        const {
-            rows: [category],
-        } = await connection.query(
-            `
-            SELECT * FROM categories WHERE name = ($1)
-            `,
-            [name]
-        );
+    await categoryService.create(name);
 
-        if (!category) {
-            await connection.query(
-                `
-                INSERT INTO 
-                categories (name) 
-                VALUES ($1)
-                `,
-                [name]
-            );
-
-            res.sendStatus(201);
-        } else {
-            res.sendStatus(409);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    return res.sendStatus(201);
 }
 
-export async function getCategories(req, res) {
-    try {
-        const { rows } = await connection.query(
-            `
-            SELECT * FROM categories
-            `
-        );
-        res.send(rows);
-    } catch (error) {
-        res.status(500).send(error);
-    }
+export async function getAll(req, res) {
+    const response = await categoryService.getAll();
+
+    return res.send(response);
 }

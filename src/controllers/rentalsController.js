@@ -1,171 +1,32 @@
-import connection from '../db.js';
-import { conflict as customerValidation } from '../middleware/customersValidationMiddleware.js';
-import {
-    stock,
-    conflict as rentalValidation,
-    rentalReturn,
-    delayFeeCalc,
-} from '../middleware/rentalsValidationMiddleware.js';
-import { conflict as gameValidation } from '../middleware/gamesValidationMiddleware.js';
-import dayjs from 'dayjs';
+import rentalService from '../service/rentalService.js';
 
-const today = dayjs().format('YYYY-MM-DD');
+export async function create(req, res) {
+    const rental = req.body;
 
-export async function createRental(req, res) {
-    const { customerId, gameId, daysRented } = req.body;
+    await rentalService.create(rental);
 
-    try {
-        const customer = await customerValidation(customerId);
-        const game = await gameValidation(gameId);
-        const rental = await stock(gameId);
-
-        if (customer && game && rental) {
-            const {
-                rows: [price],
-            } = await connection.query(
-                `
-                SELECT "pricePerDay" FROM games WHERE id=$1
-                `,
-                [gameId]
-            );
-
-            const originalPrice = daysRented * price.pricePerDay;
-            await connection.query(
-                `
-                INSERT INTO 
-                rentals ("customerId", "gameId", "daysRented", "rentDate","originalPrice", "returnDate", "delayFee") 
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                `,
-                [
-                    customerId,
-                    gameId,
-                    daysRented,
-                    today,
-                    originalPrice,
-                    null,
-                    null,
-                ]
-            );
-
-            res.sendStatus(201);
-        } else {
-            res.sendStatus(400);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    return res.sendStatus(201);
 }
 
-export async function getRentals(req, res) {
-    const { customerId, gameId } = req.query;
-    let query = `SELECT rentals.*, 
-                customers.name AS "customerName", 
-                games.name AS "gameName",
-                games."categoryId",
-                categories."name" AS "categoryName"
-                FROM rentals
-                JOIN customers ON customers.id = rentals."customerId"
-                JOIN games ON games.id = rentals."gameId"
-                JOIN categories ON categories.id = games."categoryId"`;
+export async function getByCustomerOrGameId(req, res) {
+    const data = req.query;
+    const response = await rentalService.getByCustomerOrGameId(data);
 
-    if (customerId) {
-        query += `WHERE rentals."customerId"=${customerId}`;
-    } else if (gameId) {
-        query += `WHERE rentals."gameId"=${gameId}`;
-    }
-    try {
-        const { rows } = await connection.query(query);
-
-        res.send(
-            rows.map((row) => {
-                const {
-                    id,
-                    customerId,
-                    gameId,
-                    rentDate,
-                    daysRented,
-                    returnDate,
-                    originalPrice,
-                    delayFee,
-                    customerName,
-                    gameName,
-                    categoryId,
-                    categoryName,
-                } = row;
-
-                return {
-                    id,
-                    customerId,
-                    gameId,
-                    rentDate,
-                    daysRented,
-                    returnDate,
-                    originalPrice,
-                    delayFee,
-                    customer: { id: customerId, name: customerName },
-                    game: {
-                        id: gameId,
-                        name: gameName,
-                        categoryId,
-                        categoryName,
-                    },
-                };
-            })
-        );
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    return res.send(response);
 }
 
-export async function endRental(req, res) {
+export async function finish(req, res) {
     const { id } = req.params;
 
-    try {
-        const rental = await rentalValidation(id);
-        if (rental) {
-            const returnedAlready = await rentalReturn(id);
-            if (returnedAlready) {
-                res.sendStatus(400);
-            } else {
-                const delayFee = await delayFeeCalc(id, today);
+    await rentalService.finish(id);
 
-                await connection.query(
-                    `
-                    UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3
-                    `,
-                    [today, delayFee, id]
-                );
-                res.sendStatus(200);
-            }
-        } else {
-            res.sendStatus(404);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+    return res.sendStatus(200);
 }
 
-export async function deleteRental(req, res) {
+export async function exclude(req, res) {
     const { id } = req.params;
-    try {
-        const rental = await rentalValidation(id);
-        if (rental) {
-            const returnedAlready = await rentalReturn(id);
-            if (returnedAlready) {
-                res.sendStatus(400);
-            } else {
-                await connection.query(
-                    `
-                    DELETE FROM rentals WHERE id=$1
-                    `,
-                    [id]
-                );
-                res.sendStatus(200);
-            }
-        } else {
-            res.sendStatus(404);
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
+
+    await rentalService.exclude(id);
+
+    return res.sendStatus(200);
 }

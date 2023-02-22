@@ -1,29 +1,22 @@
 import { Router } from 'express';
-import {
-    createCustomer,
-    getCustomers,
-    getCustomer,
-    updateCustomer,
-} from '../controllers/customersController.js';
-import validateSchemaMiddleware from '../middleware/validateSchemaMiddleware.js';
+import * as customerController from '../controllers/customersController.js';
+import { validateSchemaMiddleware } from '../middleware/validateSchemaMiddleware.js';
 import customerSchema from '../schemas/customerSchema.js';
 
-const customersRouter = Router();
+const customers = Router();
 
-customersRouter.post(
-    '/customers',
-    validateSchemaMiddleware(customerSchema),
-    createCustomer
-);
+customers
+    .post(
+        '/',
+        validateSchemaMiddleware(customerSchema),
+        customerController.create
+    )
+    .get('/', customerController.getByCpfOrGetAll)
+    .get('/:id', customerController.getById)
+    .put(
+        '/:id',
+        validateSchemaMiddleware(customerSchema),
+        customerController.update
+    );
 
-customersRouter.get('/customers', getCustomers);
-
-customersRouter.get('/customers/:id', getCustomer);
-
-customersRouter.put(
-    '/customers/:id',
-    validateSchemaMiddleware(customerSchema),
-    updateCustomer
-);
-
-export default customersRouter;
+export { customers };

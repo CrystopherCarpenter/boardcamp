@@ -1,19 +1,16 @@
 import { Router } from 'express';
-import {
-    createCategory,
-    getCategories,
-} from '../controllers/categoriesController.js';
-import validateSchemaMiddleware from '../middleware/validateSchemaMiddleware.js';
+import * as categoriesController from '../controllers/categoriesController.js';
+import { validateSchemaMiddleware } from '../middleware/validateSchemaMiddleware.js';
 import categorySchema from '../schemas/categorySchema.js';
 
-const categoriesRouter = Router();
+const categories = Router();
 
-categoriesRouter.post(
-    '/categories',
-    validateSchemaMiddleware(categorySchema),
-    createCategory
-);
+categories
+    .post(
+        '/',
+        validateSchemaMiddleware(categorySchema),
+        categoriesController.create
+    )
+    .get('/', categoriesController.getAll);
 
-categoriesRouter.get('/categories', getCategories);
-
-export default categoriesRouter;
+export { categories };
